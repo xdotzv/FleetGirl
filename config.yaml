@@ -1,0 +1,30 @@
+# YAML uses three dashes (“---”) to separate directives from document content. 
+# This also serves to signal the start of a document if no directives are present.
+# 1001: none
+# 1002: DD
+# 1003: 2DD
+# 1004: 2DD
+# 2001: CL 2DD
+# 2002: 2CL
+# 2003: none
+# 2004: none
+# 3001: 2DD
+# 3002: DD
+# 3003: CA
+# 3004: CA
+---
+login_host: http://login.zjios.p7game.com/
+game_host: http://s3.zjios.p7game.com/
+user: username
+pwd: password
+explore_plan:
+    1: 10003
+    2: 20001
+    3: 20002
+    4: 30001
+params:
+    market: 3
+    channel: 2
+    version: 1.2.9
+sleep_interval: 1
+
