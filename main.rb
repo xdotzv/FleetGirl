@@ -41,15 +41,35 @@ end
 def try_combat
     yume = FleetGirl.new
     yume.login
-    yume.combat_by_path 1, 304, ["A", "C", "E", "I", "J"], [3, 3, 3, 3, 1]
+    #yume.combat_by_path 1, 304, ["A", "C", "E", "I", "J"], [3, 3, 3, 3, 1]
+    while yume.hevay_damaged?(1) == false
+        yume.combat_by_path 1, 201, ["B", "D", "F"], [2, 2 , 2]
+    end
+
 end#"pveExploreVo"=>{"levels"=>[{"exploreId"=>"10003", "fleetId"=>"1", "startTime"=>1429769491, "endTime"=>1429771291}, {"exploreId"=>"20004", "fleetId"=>"4", "startTime"=>1429767341, "endTime"=>1429778141}, {"exploreId"=>"20002", "fleetId"=>"3", "startTime"=>1429767290, "endTime"=>1429769990}, {"exploreId"=>"20001", "fleetId"=>"2", "startTime"=>1429764545, "endTime"=>1429771745}]
 
-good_night
+ # try_combat
+# good_night
+# yume = FleetGirl.new
+# yume.login
+# yume.dump_fleet_info
+# yume = FleetGirl.new
+# yume.login
 # # yume = FleetGirl.new
 # # yume.login
 # # yume.pvp
 # # sleep 10
 # # yume.get "api/initData"
-# # while yume.hevay_damaged? == false
-# #   yume.combat 1, 204, true, 1
-# # end
+# yume = FleetGirl.new
+# yume.login
+
+# while yume.hevay_damaged? == false
+#     yume.combat 1, 204, true, 1
+# end
+
+yume = FleetGirl.new
+yume.login
+#yume.combat_by_path 1, 304, ["A", "C", "E", "I", "J"], [3, 3, 3, 3, 1]
+while yume.hevay_damaged?(1) == false
+    yume.combat_by_path 1, 201, ["B", "D", "F"], [2, 2 , 2]
+end

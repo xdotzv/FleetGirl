@@ -81,7 +81,7 @@ class FleetGirl
 
 	def login()
 		url = "index/passportLogin/#{@user}/#{@pwd}"
-		url = @login_host + url
+		url = URI.encode(@login_host + url)
 		log "get #{url}"
 		r = RestClient.get url 		#r is a String but somehow has :cookies metho, maybe define method for an object
 		log r
@@ -156,7 +156,7 @@ class FleetGirl
 
 	def combat_by_path(fleet_id, mission_id, path, formations)
 		base_node_id = "#{mission_id}02".to_i
-		supply_fleet(fleet_id)
+		supply_fleet fleet_id
 		fleet_info = get_fleet_info(fleet_id)
 
 		max_hps = fleet_info.map { |x| x["battlePropsMax"]["hp"]}
@@ -282,6 +282,13 @@ class FleetGirl
 		s = pupils[0..-2].map { |x| x['id'] }.join(',')
 
 		get "dock/dismantleBoat/[#{s}]/1"
+	end
+
+	def dump_fleet_info
+		fleet_info = get_init_data()["fleetVo"].map { |x| x["ships"] }
+		File.open("fleet_info", "w") do |file|
+			file.write(YAML.dump fleet_info)
+		end 
 	end
 end
 
