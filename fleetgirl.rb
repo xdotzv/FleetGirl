@@ -230,7 +230,7 @@ class FleetGirl
 		r["userShipVO"].select{ |x| ships.include? x["id"]}
 	end
 
-	def hevay_damaged?(fleet_number=1)
+	def heavy_damaged?(fleet_number=1)
 		status = fleet_status(fleet_number)
 		p status.map { |x| (x["battleProps"]["hp"].to_f / x["battlePropsMax"]["hp"]).round(2) }
 		status.any? { |x| x["battleProps"]["hp"] < 0.5*x["battlePropsMax"]["hp"]}
