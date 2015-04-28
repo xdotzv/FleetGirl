@@ -1,152 +1,8 @@
-require 'rest-client'
-require 'digest'
-require "json"
-require "uri"
-require "yaml"
-require "pry"
-
+require './basefleetgirl'
 #to go around the URI check
-module URI
-  class << self
-    def parse_with_safety(uri)
-      parse_without_safety uri.gsub('[', '%5B').gsub(']', '%5D')
-    end
-
-    alias parse_without_safety parse
-    alias parse parse_with_safety
-  end
-end
 
 
-
-class FleetGirl
-	@@secret_key = "Mb7x98rShwWRoCXQRHQb"
-	attr_accessor :explore_plan
-	#@@android_login_host = "http://login.alpha.p7game.com/"
-
-	def log(str)
-		@log_file.puts str
-		puts str
-	end
-
-	def initialize(config_file="config.yaml")
-		config = YAML.load(File.open(config_file))
-		config.each do |key, value|
-			self.instance_variable_set "@#{key}".to_sym, value
-		end
-		@cookies = {}
-		# @log_file = File.open("log_#{Time.now.to_i}", "w")
-		@log_file = File.open("log", "w")
-		@log_file.puts Time.now
-	end
-
-	def params(path)
-		params = {}
-		@params.each do |key, value|
-			params[key.to_sym] = value
-		end
-		params[:t] = 233
-		params[:e] = Digest::MD5.hexdigest path+"&t="+params[:t].to_s+@@secret_key
-		params
-	end
-
-	#relative to @game_host 
-	def get(path, *accept_eids)
-		url = @game_host + path
-
-		begin
-			sleep @sleep_interval
-			log "get " + url
-			raw = RestClient.get url, :params => params(path), :cookies => @cookies
-			@cookies.update raw.cookies
-			r = JSON.parse(raw)
-			log r
-			if r["eid"] == -9997
-				@cookies.clear
-				login
-				next
-			end
-		end until r["eid"].nil? or accept_eids.include? r["eid"]
-		r
-	end
-
-	def try_get(path)
-		sleep @@sleep_interval
-		url = @game_host + path
-		log "try get " + url
-		r = RestClient.get url, :params => params(path), :cookies => @cookies 
-		log r
-		r
-	end
-
-	def login()
-		url = "index/passportLogin/#{@user}/#{@pwd}"
-		url = URI.encode(@login_host + url)
-		log "get #{url}"
-		r = RestClient.get url 		#r is a String but somehow has :cookies metho, maybe define method for an object
-		log r
-		@user_id = JSON.parse(r)["userId"]
-		@cookies = r.cookies
-		get "index/login/#{@user_id}"
-
-		#try_get "api/initData"
-		#try_get "active/getUserData"	
-		#not necessary
-	end
-#for reference
-# boat/supplyFleet/1/0
-# pve/challenge129/104/1/0
-# pve/next/
-# pve/deal/10403/1/2
-# pve/getWarResult/0
-# pve/pveEnd
-#-608 舰队组成不满足条件
-
-	def explore_start(fleet_id, explore_id=nil)
-		explore_id = @explore_plan[fleet_id] if explore_id.nil?
-		get "explore/start/#{fleet_id}/#{explore_id}", -604
-	end
-	def explore_end(fleet_id, explore_id=nil)
-		explore_id = @explore_plan[fleet_id.to_s] if explore_id.nil?
-		get "explore/getResult/#{explore_id}", -602		
-	end
-	def repair_start(ship_id, dock_id)
-		get "boat/repair/#{ship_id}/#{dock_id}"
-	end
-	def repair_end(ship_id, dock_id)
-		get "boat/repairComplete/#{dock_id}/#{ship_id}"
-	end
-
-
-	#-411 full supply?
-	def supply_fleet(fleet_id=1)
-		get "boat/supplyFleet/#{fleet_id}/0", -411
-	end
-
-	def pve_start(fleet_id, mission_id)
-		# -407  大破 无法出击
-		r = get "pve/challenge129/#{mission_id}/#{fleet_id}/0", -407
-		r["eid"] != -407
-	end
-
-	def pve_end()
-		get "pve/pveEnd/"
-	end
-
-	def pve_battle(fleet_id, node_id, formation, night_war=0)
-		r = get "pve/deal/#{node_id}/#{fleet_id}/#{formation}"
-		return nil if r.has_key?("warReport") == false
-		night_war = r["warReport"]["canDoNightWar"] if night_war==1
-		get "pve/getWarResult/#{night_war}"
-	end
-
-	def get_next_node()
-		get("pve/next/")["node"]
-	end
-
-	def get_init_data()
-		get "api/initData"
-	end
+class FleetGirl < BaseFleetGirl 
 
 	def get_fleet_info(fleet_id)
 		data = get_init_data
@@ -156,7 +12,7 @@ class FleetGirl
 
 	def combat_by_path(fleet_id, mission_id, path, formations)
 		base_node_id = "#{mission_id}02".to_i
-		supply_fleet fleet_id
+		supply_fleet(fleet_id)
 		fleet_info = get_fleet_info(fleet_id)
 
 		max_hps = fleet_info.map { |x| x["battlePropsMax"]["hp"]}
@@ -236,13 +92,9 @@ class FleetGirl
 		status.any? { |x| x["battleProps"]["hp"] < 0.5*x["battlePropsMax"]["hp"]}
 	end
 
-	def pvp()
-		r = get "pvp/getChallengeList/"
-		opponents = r["list"].map { |x| x["uid"] }
-
-		opponents.each do |op|
-			get "pvp/challenge/#{op}/1/5", -906 # myfleetID, formation
-			get "pvp/getWarResult/1", -904
+	def pvp_all()
+		get_pvp_list.each do |opponent|
+			pvp_battle opponent
 		end
 	end
 # def pvp():
@@ -256,40 +108,68 @@ class FleetGirl
 		get("api/initData")["userShipVO"].select { |x| x["level"] == 1 and x["fleetId"] == 0 and x["exp"] == 0 and x["isLocked"] == 0}
 	end
 
-	def dark
+	def dark()
 		fleet_id = 1
 
 		pupils = find_pupils
 
 		5.downto(1) do |index|
-			get "boat/removeBoat/#{fleet_id}/#{index}", -314
+      remove_ship fleet_id, index
 		end
 
 		if pupils.length > 6
-			s = pupils[6..-1].map { |x| x['id'] }.join(',')
-			get "dock/dismantleBoat/[#{s}]/1" # 1 means dismantle arms also
+			tmps = pupils[6..-1].map { |x| x['id'] }
+      dismantle_ships tmps, 1
 		end
 
 		pupils = pupils[0..5]
-
+#may replace itself
 		pupils[0..-2].each do |x|
-				get "boat/changeBoat/#{fleet_id}/#{x['id']}/0"
-				5.times { combat 1, 101, false }
+      change_ship fleet_id, x["id"], 0
+			5.times { combat 1, 101, false, 1 }
 		end
 
-		get "boat/changeBoat/#{fleet_id}/#{pupils[-1]['id']}/0"
-
-		s = pupils[0..-2].map { |x| x['id'] }.join(',')
-
-		get "dock/dismantleBoat/[#{s}]/1"
+    change_ship fleet_id, pupils[-1]['id'], 0
+		tmps = pupils[0..-2].map { |x| x['id'] }
+    dismantle_ships tmps, 1
 	end
 
-	def dump_fleet_info
-		fleet_info = get_init_data()["fleetVo"].map { |x| x["ships"] }
-		File.open("fleet_info", "w") do |file|
-			file.write(YAML.dump fleet_info)
-		end 
-	end
+	def good_night()
+		1.upto(4) do |i|
+			supply_fleet i
+		end
+		r = get_init_data
+    repair_dock = r["repairDockVo"]
+
+    ships = get_damaged_ships(r)
+    explore_info = r["pveExploreVo"]["levels"]
+    free_fleets = @explore_plan.keys - explore_info.map { |x| x["fleetId"].to_i }
+    
+    free_fleets.each do |fleet_id|
+        r = explore_start fleet_id
+        explore_info = r["pveExploreVo"]["levels"]
+    end
+
+    while true
+        explore_info.dup.each do |x|
+            if x["endTime"] < Time.now.to_i
+                r = explore_end x["fleetId"].to_i, x["exploreId"]
+                r = explore_start x["fleetId"].to_i
+                explore_info = r["pveExploreVo"]["levels"]
+            end
+        end
+        repair_dock.dup.each do |dock|
+            break if ships.empty?
+            next if dock["locked"] == 1
+            if dock["endTime"].nil? or dock["endTime"] < Time.now.to_i
+                r = repair_end dock["shipId"], dock["id"] if dock.has_key? "shipId"
+                r = repair_start ships.shift, dock["id"]
+                repair_dock = r["repairDockVo"]
+            end
+        end
+        sleep 30
+    end
+  end
 end
 
 
