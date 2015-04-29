@@ -141,4 +141,7 @@ class BaseFleetGirl
   def dismantle_ships(ship_ids, dismantle_arm)
     get "dock/dismantleBoat/[#{ship_ids.join(',')}]/#{dismantle_arm}"
   end
+  def get_build_log()
+    get "dock/getBuildBoatLog/"
+  end
 end
