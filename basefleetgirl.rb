@@ -16,7 +16,7 @@ module URI
     alias parse parse_with_safety
   end
 end
-
+  
 class BaseFleetGirl
   @@secret_key = "Mb7x98rShwWRoCXQRHQb"
 
@@ -81,10 +81,12 @@ class BaseFleetGirl
     explore_id = @explore_plan[fleet_id] if explore_id.nil?
     get "explore/start/#{fleet_id}/#{explore_id}", -604
   end
+  
   def explore_end(fleet_id, explore_id=nil)
     explore_id = @explore_plan[fleet_id.to_s] if explore_id.nil?
     get "explore/getResult/#{explore_id}", -602   
   end
+  
   def repair_start(ship_id, dock_id)
     get "boat/repair/#{ship_id}/#{dock_id}"
   end
@@ -98,10 +100,11 @@ class BaseFleetGirl
   end
 
   def pve_start(fleet_id, mission_id)
-    # -407  大破 无法出击
+    # -407 heavy damaged
+    # -408 empty supply
     eids = [-407,-408]
     r = get "pve/challenge129/#{mission_id}/#{fleet_id}/0", *eids
-    eids.include? r["eid"]
+    not eids.include? r["eid"]
   end
 
   def pve_end()
@@ -118,11 +121,11 @@ class BaseFleetGirl
   def get_init_data()
     get "api/initData"
   end
-
-
+  
   def get_next_node()
     get("pve/next/")["node"]
-  end  
+  end
+  
   def get_pvp_list()
     get("pvp/getChallengeList/")["list"].map { |x| x["uid"] }
   end
@@ -135,13 +138,12 @@ class BaseFleetGirl
   def remove_ship(fleet_id, index)
     get "boat/removeBoat/#{fleet_id}/#{index}", -314, -104
   end
+  
   def change_ship(fleet_id, ship_id, index)
     get "boat/changeBoat/#{fleet_id}/#{ship_id}/#{index}"
   end
+  
   def dismantle_ships(ship_ids, dismantle_arm)
     get "dock/dismantleBoat/[#{ship_ids.join(',')}]/#{dismantle_arm}"
-  end
-  def get_build_log()
-    get "dock/getBuildBoatLog/"
   end
 end
