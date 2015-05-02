@@ -39,7 +39,7 @@ class FleetGirl < BaseFleetGirl
     pve_end
     true
   end
-  def combat(fleet_id=1, mission_id=204, supply=true, night_war=0)
+  def combat(fleet_id, mission_id, supply=true, night_war=0)
     supply_fleet(fleet_id) if supply
 
     if pve_start(fleet_id, mission_id)
@@ -169,6 +169,11 @@ class FleetGirl < BaseFleetGirl
       end
       sleep 30
     end
+  end
+
+  def dump_fleet_formation(filename="fleets")
+    r = get_init_data()["fleetVo"].map {|x| x["ships"] }
+    File.write(filename+".yaml", YAML.dump(r))
   end
 end
 
