@@ -171,7 +171,7 @@ class FleetGirl < BaseFleetGirl
     end
   end
 
-  def dump_fleet_formation(filename="fleets")
+  def dump_fleets_formation(filename="fleets")
     r = get_init_data()["fleetVo"].map {|x| x["ships"] }
     File.write(filename+".yaml", YAML.dump(r))
   end
