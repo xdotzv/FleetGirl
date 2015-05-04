@@ -134,9 +134,15 @@ class FleetGirl < BaseFleetGirl
   end
 
   def good_night()
-    1.upto(4) do |i|
-      supply_fleet i
+    fleets_formation = YAML.load(File.open("fleets.yaml"))
+
+    1.upto(4) do |fleet_id|
+      0.upto(5) do |index|
+        change_ship fleet_id, fleets_formation[fleet_id-1][index], index
+      end
+      supply_fleet fleet_id
     end
+
     r = get_init_data
     repair_dock = r["repairDockVo"]
 

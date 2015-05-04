@@ -139,8 +139,9 @@ class BaseFleetGirl
     get "boat/removeBoat/#{fleet_id}/#{index}", -314, -104
   end
   
+  #-312 same ship as the original one
   def change_ship(fleet_id, ship_id, index)
-    get "boat/changeBoat/#{fleet_id}/#{ship_id}/#{index}"
+    get "boat/changeBoat/#{fleet_id}/#{ship_id}/#{index}", -312
   end
   
   def dismantle_ships(ship_ids, dismantle_arm)
